@@ -419,6 +419,9 @@ function show(id){
 const audio = $("#bgmAudio");
 const musicBtn = $("#music");
 let musicReady = false;
+// 「她想不想聽」跟「現在有沒有在響」是兩回事。切走的時候要停，
+// 但切回來要不要放回去，得看她自己有沒有按掉過。
+let musicWanted = false;
 if (CONFIG.bgm){
   audio.src = CONFIG.bgm;
   audio.addEventListener("canplay", () => { musicReady = true; }, { once:true });
@@ -428,6 +431,7 @@ function startMusic(){
   if (!CONFIG.bgm) return;
   audio.volume = 0.45;
   audio.play().then(() => {
+    musicWanted = true;
     musicBtn.classList.add("show");
     musicBtn.classList.remove("off");
     const tip = $("#silentTip");
@@ -444,8 +448,25 @@ function startMusic(){
   });
 }
 musicBtn.addEventListener("click", () => {
-  if (audio.paused){ audio.play().catch(()=>{}); musicBtn.classList.remove("off"); }
-  else { audio.pause(); musicBtn.classList.add("off"); }
+  if (audio.paused){
+    musicWanted = true;
+    audio.play().catch(()=>{});
+    musicBtn.classList.remove("off");
+  } else {
+    musicWanted = false;
+    audio.pause();
+    musicBtn.classList.add("off");
+  }
+});
+
+// 頁面被切走不等於被關掉 —— 不處理的話，她去接電話或回訊息時，
+// 鋼琴會在背景一直響下去。切回來再從原本的位置接著播。
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden){
+    if (!audio.paused) audio.pause();
+  } else if (musicWanted && audio.paused){
+    audio.play().catch(()=>{});   // 她自己按掉的就不要自作主張放回去
+  }
 });
 
 /* ---------- 0. 解鎖 ---------- */
