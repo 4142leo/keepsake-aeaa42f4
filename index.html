@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>給你的</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#141a26; --night2:#20293a;
+  --paper:#f7f0e4; --paper2:#efe5d5;
+  --ink:#2e2723; --ink-soft:#6b5f56;
+  --rose:#b4553f; --gold:#c9a227;
+  --shadow:0 8px 30px rgba(20,16,12,.18);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Noto Serif TC",serif;
+  background:var(--night); color:var(--ink);
+  min-height:100dvh; overflow-x:hidden;
+}
+.scene{display:none;min-height:100dvh;padding:calc(24px + var(--safe-t)) 20px calc(32px + var(--safe-b))}
+.scene.on{display:block;animation:fade .8s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.paper-bg{background:var(--paper)}
+h1,h2{font-weight:400;letter-spacing:.06em;margin:0}
+p{line-height:1.9;margin:0 0 1em}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:calc(100dvh - 80px)}
+.muted{color:var(--ink-soft);font-size:.85rem;letter-spacing:.05em}
+
+/* ---------- 鎖 ---------- */
+#lock{background:radial-gradient(120% 80% at 50% 10%,var(--night2),var(--night));color:#e8e0d2}
+#lock .muted{color:#9aa3b4}
+.stars{position:fixed;inset:0;pointer-events:none}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:tw 4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:.8}}
+.envelope{width:110px;height:78px;margin:0 auto 28px;position:relative;filter:drop-shadow(0 10px 24px rgba(0,0,0,.5))}
+.envelope .body{position:absolute;inset:0;background:var(--paper);border-radius:5px}
+.envelope .flap{position:absolute;top:0;left:0;width:0;height:0;border-left:55px solid transparent;border-right:55px solid transparent;border-top:40px solid var(--paper2)}
+.envelope .seal{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:var(--rose);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+#lock h1{font-size:1.4rem;margin-bottom:10px}
+.code{display:flex;gap:10px;justify-content:center;margin:26px 0 14px}
+.code input{
+  width:52px;height:64px;text-align:center;font-size:1.7rem;font-family:inherit;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);
+  border-radius:10px;color:#f2ece0;outline:none;transition:.2s;
+}
+.code input:focus{border-color:var(--gold);background:rgba(255,255,255,.12)}
+.code.bad{animation:shake .4s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+.hint{min-height:1.4em;font-size:.86rem;color:#9aa3b4;letter-spacing:.06em}
+
+/* ---------- 共用按鈕 ---------- */
+.btn{
+  display:inline-block;margin-top:22px;padding:13px 30px;border:none;border-radius:999px;
+  background:var(--rose);color:#fff;font-family:inherit;font-size:1rem;letter-spacing:.1em;
+  box-shadow:var(--shadow);cursor:pointer;transition:transform .15s,opacity .2s;
+}
+.btn:active{transform:scale(.96)}
+.btn.ghost{background:transparent;color:var(--ink-soft);border:1px solid rgba(0,0,0,.16);box-shadow:none;font-size:.85rem;padding:9px 20px}
+
+/* ---------- 關卡標頭 ---------- */
+.head{text-align:center;margin-bottom:18px}
+.head .step{font-size:.72rem;letter-spacing:.35em;color:var(--rose);margin-bottom:8px}
+.head h2{font-size:1.15rem}
+.head .sub{font-size:.83rem;color:var(--ink-soft);margin-top:6px}
+
+/* ---------- 關卡一：翻牌 ---------- */
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:430px;margin:0 auto}
+/* 正方形：直式照片放進 4:3 的框只看得到 42% 的畫面，正方形能留住 56% */
+.card{position:relative;aspect-ratio:1;perspective:900px;cursor:pointer}
+.card .in{position:absolute;inset:0;transition:transform .5s;transform-style:preserve-3d}
+.card.flip .in,.card.done .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.face.back{background:linear-gradient(145deg,#c4644f,#a0432f);display:flex;align-items:center;justify-content:center}
+.face.back::after{content:"";width:26px;height:26px;border:1.5px solid rgba(255,255,255,.55);border-radius:50%}
+.face.front{transform:rotateY(180deg);background:var(--paper2)}
+/* 裁切位置往上移：人臉通常在直式照片的上半部，切正中間容易把頭切掉 */
+.face.front img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
+.card.done{animation:pop .45s ease}
+.card.done .face.front{box-shadow:0 0 0 3px var(--gold),var(--shadow)}
+@keyframes pop{50%{transform:scale(1.06)}}
+.said{text-align:center;min-height:3.4em;margin-top:16px;font-size:.95rem;color:var(--ink-soft);padding:0 8px;line-height:1.8}
+
+/* ---------- 關卡二：拼圖 ---------- */
+.puz{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:min(88vw,360px);aspect-ratio:1;margin:0 auto;background:var(--paper2);padding:4px;border-radius:12px;box-shadow:var(--shadow);transition:gap .4s,padding .4s}
+.pc{border-radius:6px;background-size:300% 300%;background-repeat:no-repeat;cursor:pointer;transition:transform .18s,box-shadow .18s,border-radius .4s}
+.pc.sel{transform:scale(.9);box-shadow:0 0 0 3px var(--gold)}
+.puz.solved{gap:0;padding:0;animation:pop .5s ease}
+.puz.solved .pc{box-shadow:none;transform:none;border-radius:0;cursor:default}
+.puz.peek .pc{opacity:.999}
+
+/* ---------- 回憶捲軸 ---------- */
+.roll{max-width:520px;margin:0 auto}
+.shot{margin-bottom:30px;opacity:0;transform:translateY(24px);transition:.7s}
+.shot.in{opacity:1;transform:none}
+.shot img{width:100%;border-radius:14px;box-shadow:var(--shadow);display:block}
+.shot .cap{margin-top:10px;font-size:.92rem;color:var(--ink-soft);text-align:center;line-height:1.8}
+
+/* ---------- 信 ---------- */
+.letter{max-width:460px;margin:0 auto;white-space:pre-wrap;font-size:1rem;line-height:2.1}
+.gift{max-width:460px;margin:34px auto 0;padding:20px 22px;border:1px dashed var(--rose);border-radius:14px;text-align:center;font-size:.95rem;line-height:1.9}
+.gift b{color:var(--rose);font-weight:600}
+/* 授權標示：看得到就好，不要搶走信的注意力 */
+.credit{margin:34px auto 0;max-width:460px;text-align:center;font-size:.66rem;line-height:1.8;color:var(--ink-soft);opacity:.5}
+.credit a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(0,0,0,.15)}
+
+/* ---------- 音樂鈕 ---------- */
+#music{
+  position:fixed;right:14px;top:calc(14px + var(--safe-t));z-index:50;
+  width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+  background:rgba(255,255,255,.82);box-shadow:var(--shadow);font-size:17px;line-height:1;
+  display:none;align-items:center;justify-content:center;
+}
+#music.show{display:flex}
+#music.off{opacity:.45}
+.silent-tip{position:fixed;right:12px;top:calc(62px + var(--safe-t));z-index:50;font-size:.68rem;color:var(--ink-soft);background:rgba(255,255,255,.85);padding:4px 8px;border-radius:8px;display:none}
+.silent-tip.show{display:block;animation:fade .5s both}
+</style>
+</head>
+<body>
+
+<button id="music" title="音樂">&#9834;</button>
+<div class="silent-tip" id="silentTip">記得關掉側邊靜音鍵</div>
+
+<!-- ========== 0. 鎖 ========== -->
+<section class="scene on" id="lock">
+  <div class="stars" id="stars"></div>
+  <div class="center">
+    <div class="envelope"><div class="body"></div><div class="flap"></div><div class="seal"></div></div>
+    <h1>有一件事想跟你說</h1>
+    <p class="muted" style="margin-top:6px">先輸入屬於我們的四個數字</p>
+    <div class="code" id="code">
+      <input inputmode="numeric" autocomplete="off" aria-label="第一碼">
+      <input inputmode="numeric" autocomplete="off" aria-label="第二碼">
+      <input inputmode="numeric" autocomplete="off" aria-label="第三碼">
+      <input inputmode="numeric" autocomplete="off" aria-label="第四碼">
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+</section>
+
+<!-- ========== 1. 翻牌 ========== -->
+<section class="scene paper-bg" id="stage1">
+  <div class="head">
+    <div class="step">第 一 關</div>
+    <h2>把成雙的回憶湊回來</h2>
+    <div class="sub">兩張一樣的照片，翻到一起就好</div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div class="said" id="said"></div>
+  <div style="text-align:center"><button class="btn" id="go2" style="display:none">下一關</button></div>
+</section>
+
+<!-- ========== 2. 拼圖 ========== -->
+<section class="scene paper-bg" id="stage2">
+  <div class="head">
+    <div class="step">第 二 關</div>
+    <h2>這張被我弄亂了</h2>
+    <div class="sub">點兩塊就會交換位置，拼回原本的樣子</div>
+  </div>
+  <div class="puz" id="puz"></div>
+  <div class="said" id="puzSaid"></div>
+  <div style="text-align:center">
+    <button class="btn" id="go3" style="display:none">下一關</button>
+    <div><button class="btn ghost" id="peek">長按偷看原圖</button></div>
+  </div>
+</section>
+
+<!-- ========== 3. 回憶捲軸 ========== -->
+<section class="scene paper-bg" id="stage3">
+  <div class="head">
+    <div class="step">我 們 的 這 一 年</div>
+    <h2 id="rollTitle"></h2>
+    <div class="sub">慢慢往下滑</div>
+  </div>
+  <div class="roll" id="roll"></div>
+  <div style="text-align:center;padding-bottom:20px"><button class="btn" id="go4">還有最後一件事</button></div>
+</section>
+
+<!-- ========== 4. 信 ========== -->
+<section class="scene paper-bg" id="stage4">
+  <div class="head" style="margin-top:24px"><div class="step">最 後</div></div>
+  <div class="letter" id="letter"></div>
+  <div class="gift" id="gift"></div>
+  <div style="text-align:center;padding:26px 0 10px">
+    <button class="btn ghost" id="again">從頭再看一次</button>
+  </div>
+  <!-- CC BY 4.0 規定必須標示出處，這段不能刪 -->
+  <div class="credit">
+    音樂：<a href="https://soundcloud.com/keysofmoon" target="_blank" rel="noopener">Warm Memories – Emotional Inspiring Piano by Keys of Moon</a><br>
+    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>　·　Music promoted by <a href="https://www.chosic.com/free-music/all/" target="_blank" rel="noopener">chosic.com</a>
+  </div>
+</section>
+
+<audio id="bgmAudio" loop preload="none"></audio>
+
+<script>
+/* =====================================================================
+   設定區 —— Leo 只要改這一塊就好，下面的程式碼不用動。
+   照片放進 photos/ 資料夾，檔名對應下面填的名字。
+   任何一張照片還沒放進去，網頁會自動顯示佔位圖，不會壞掉。
+   ===================================================================== */
+const CONFIG = {
+
+  // 進站密碼與提示
+  password: "1010",
+  hint: "提示：我們的週年日期",
+
+  // 第一關：翻牌配對的三句話。順序 = photos/1-翻牌用 資料夾裡照片的檔名順序。
+  matchLines: [
+    "可愛！第一次跟寶寶來",
+    "在圖書館睡覺的可愛貓貓",
+    "等等要去看美術館煙火的聰明寶咪"
+  ],
+
+  // 第二關：拼好之後跳出的話。
+  puzzleLine: "第一次跟貓貓去宜蘭玩的合照，貓貓可愛～",
+
+  // 第三段：回憶捲軸。順序 = photos/3-回憶捲軸 裡照片的檔名順序。
+  rollTitle: "一周年回憶的旅行",
+  rollCaptions: [
+    "開始的第一天，也是我們第一次看煙火",
+    "那天我們去吃了好吃的拉麵，晚上還一起看海景",
+    "帶貓貓逛動物園，貓貓很怕蛇，但我會保護貓貓",
+    "那天我們去桃園神社，希望我們也能把風鈴掛上去",
+    "那天看了好多表演，喝了海獅造型的奶茶，還有貓貓送我的吊牌！",
+    "那天第一次在天文館看電影，感覺真的來到了星空",
+    "那天是第一次的夜景，也是第一次跟貓貓的旅行，貓貓還拍貓貓",
+    "那天性感貓貓誘惑我，吃掉她！！",
+    "那天我們去貓咪咖啡廳，跟好多貓貓玩，但我最喜歡玲玲貓貓",
+    "那天去了美術館，看來很多看不懂的展，但之後到超現實依然逛得很過癮",
+    "那天我的貓貓很美，很可愛還一起煮了韓式炸雞帶去野餐",
+    "那天我們也看了煙火，貓貓在煙火下很美",
+    "那天我們去了台中，水族館的水母很美貓貓很喜歡",
+    "那天貓貓像小朋友一樣在挖沙坑很可愛",
+    "那天小朋友邀請我一起在他作品上面蓋章",
+    "不管哪天我都想一直跟貓貓過，在之後的一年、十年都能說著那天的回憶"
+  ],
+
+  // 最後那封信。Leo 自己寫的，一字未改；縮排改成中文排版慣用的兩個全形空格。
+  letter: "給親愛的玲玲貓貓～\n\n　　在這一年是我們在一起的里程碑，邊做這個網站邊翻找著相片時，與你的回憶都會像是拼圖被點亮，每個回憶湧上的瞬間都覺得很開心、很幸福，雖然我們有時候會吵架，也在這一年中看到對方的脆弱與缺點，但我們依然愛著對方依然牽著對方走繼續走。\n\n　　我愛你親愛的玲玲",
+
+  // 最後那個框裡的字。留空字串整個框就不會出現。
+  gift: "",
+
+  // 背景音樂檔名，放進 bgm/ 資料夾。留空字串就不會有音樂。
+  // CC BY 4.0 授權，規定一定要標出處 —— 信的最後面那行小字不能拿掉。
+  bgm: "bgm/warm-memories.mp3"
+};
+/* ===================== 設定區結束 ===================== */
+
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------- 照片：解密 + 佔位圖 ----------
+   照片在 enc/ 裡是密文，解密金鑰來自 NFC 卡片網址後面的 #k=...。
+   第一次開過之後金鑰會記在這支手機上，之後不帶 #k 也打得開。
+   沒有金鑰 / 檔案還沒上傳 / 解密失敗，一律退回佔位圖，網頁不會壞掉。 */
+const ENC_DIR = "enc/";
+function placeholder(label){
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0%" stop-color="#e7d9c4"/><stop offset="100%" stop-color="#cdb69c"/>' +
+    '</linearGradient></defs>' +
+    '<rect width="600" height="600" fill="url(#g)"/>' +
+    '<circle cx="300" cy="262" r="70" fill="none" stroke="#a8907a" stroke-width="5"/>' +
+    '<text x="300" y="278" font-family="serif" font-size="52" fill="#8b7561" text-anchor="middle">' + label + '</text>' +
+    '<text x="300" y="392" font-family="serif" font-size="26" fill="#94806c" text-anchor="middle">photo</text>' +
+    '</svg>';
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+// 名稱 m01 -> 標籤 01，給佔位圖用
+function labelOf(n){ const m = String(n).match(/(\d+)/); return m ? m[1] : "?"; }
+
+let cryptoKey = null;
+let hasKey = false;
+
+function keyFromUrl(){
+  const m = location.hash.match(/[#&]k=([A-Za-z0-9_-]+)/);
+  if (m){
+    try { localStorage.setItem("anniv_k", m[1]); } catch(e){}
+    // 網址列上不要一直掛著金鑰，記下來之後就清掉
+    history.replaceState(null, "", location.pathname + location.search);
+    return m[1];
+  }
+  try { return localStorage.getItem("anniv_k"); } catch(e){ return null; }
+}
+function b64uBytes(s){
+  s = s.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// 上線的照片數量以 enc/manifest.json 為準；沒有這個檔就用設定區的數量（給還沒放照片時預覽用）
+let MANIFEST = { match: CONFIG.matchLines.length, puzzle: 1, roll: CONFIG.rollCaptions.length };
+
+const READY = (async () => {
+  const b = keyFromUrl();
+  if (b && window.crypto && crypto.subtle){
+    try {
+      cryptoKey = await crypto.subtle.importKey("raw", b64uBytes(b), "AES-GCM", false, ["decrypt"]);
+      hasKey = true;
+    } catch(e){ hasKey = false; }
+  }
+  try {
+    const r = await fetch(ENC_DIR + "manifest.json", { cache:"no-cache" });
+    if (r.ok){
+      const m = await r.json();
+      if (m && typeof m.match === "number") MANIFEST = m;
+    }
+  } catch(e){}
+})();
+
+const srcCache = new Map();
+const RETRIES = 2;          // 第一次失敗之後還要再試幾次
+const RETRY_WAIT = 500;     // 毫秒
+const FETCH_TIMEOUT = 8000; // 單次請求最多等多久
+
+async function fetchPhoto(name){
+  // 一定要帶版本號：不帶的話，重新產生過照片之後瀏覽器會抱著舊密文不放，
+  // 用新金鑰解不開，畫面就整片空白而且不會報錯
+  const v = MANIFEST.build ? ("?v=" + MANIFEST.build) : "";
+  // fetch 預設沒有逾時。對方收了連線卻不回應（收訊死角、公共 Wi-Fi 的登入頁）
+  // 時，請求會一直掛著不成功也不失敗，下面的重試就永遠不會發生。
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(ENC_DIR + name + ".bin" + v, { signal: ac.signal });
+    if (res.status === 404){               // 檔案真的不在，重試幾次都一樣
+      const e = new Error("missing"); e.permanent = true; throw e;
+    }
+    if (!res.ok) throw new Error("http " + res.status);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    const plain = await crypto.subtle.decrypt(
+      { name:"AES-GCM", iv: buf.slice(0, 12) }, cryptoKey, buf.slice(12));
+    return URL.createObjectURL(new Blob([plain], { type:"image/jpeg" }));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function photoSrc(name){
+  if (srcCache.has(name)) return srcCache.get(name);
+  const p = (async () => {
+    if (!cryptoKey) return placeholder(labelOf(name));   // 沒鑰匙，重試也沒意義
+    for (let i = 0; i <= RETRIES; i++){
+      try {
+        return await fetchPhoto(name);
+      } catch(e){
+        if (e && e.permanent) return placeholder(labelOf(name));
+        if (i < RETRIES) await new Promise(r => setTimeout(r, RETRY_WAIT));
+      }
+    }
+    // 連續失敗通常是訊號斷了一下。失敗不能留在快取裡 ——
+    // 留了的話這一格就永遠是空白，除非她整頁重新整理。
+    srcCache.delete(name);
+    return placeholder(labelOf(name));
+  })();
+  srcCache.set(name, p);
+  return p;
+}
+
+// 先掛佔位圖，解密完再換掉，畫面不會有空洞
+function photoImg(name, alt){
+  const img = document.createElement("img");
+  img.decoding = "async";
+  img.alt = alt || "";
+  img.src = placeholder(labelOf(name));
+  const apply = u => {
+    img.src = u;
+    // 拿回來還是佔位圖，代表剛剛整段都連不上。翻牌的卡片不像捲軸會因為
+    // 捲動再觸發一次，所以這裡自己隔幾秒再補一次，不然這張就空到最後。
+    if (u.indexOf("data:") === 0 && !img.dataset.retried){
+      img.dataset.retried = "1";
+      setTimeout(() => {
+        photoSrc(name).then(u2 => { if (u2.indexOf("data:") !== 0) img.src = u2; });
+      }, 2500);
+    }
+  };
+  photoSrc(name).then(apply);
+  return img;
+}
+
+/* ---------- 場景切換 ---------- */
+const ORDER = ["lock","stage1","stage2","stage3","stage4"];
+function show(id){
+  $$(".scene").forEach(s => s.classList.remove("on"));
+  $("#" + id).classList.add("on");
+  window.scrollTo(0, 0);
+  try { localStorage.setItem("anniv_at", id); } catch(e){}
+}
+
+/* ---------- 星空 ---------- */
+(function stars(){
+  const box = $("#stars");
+  for (let i = 0; i < 46; i++){
+    const s = document.createElement("div");
+    s.className = "star";
+    s.style.left = Math.random()*100 + "%";
+    s.style.top = Math.random()*100 + "%";
+    s.style.animationDelay = (Math.random()*4) + "s";
+    s.style.opacity = .15 + Math.random()*.5;
+    box.appendChild(s);
+  }
+})();
+
+/* ---------- 音樂 ---------- */
+const audio = $("#bgmAudio");
+const musicBtn = $("#music");
+let musicReady = false;
+if (CONFIG.bgm){
+  audio.src = CONFIG.bgm;
+  audio.addEventListener("canplay", () => { musicReady = true; }, { once:true });
+  audio.addEventListener("error", () => { musicBtn.classList.remove("show"); }, { once:true });
+}
+function startMusic(){
+  if (!CONFIG.bgm) return;
+  audio.volume = 0.45;
+  audio.play().then(() => {
+    musicBtn.classList.add("show");
+    musicBtn.classList.remove("off");
+    const tip = $("#silentTip");
+    tip.classList.add("show");
+    setTimeout(() => tip.classList.remove("show"), 5200);
+  }).catch(err => {
+    // 檔案根本不存在或格式不支援 -> 不要留一顆按了沒反應的按鈕
+    if (err && (err.name === "NotSupportedError" || audio.error)){
+      musicBtn.classList.remove("show");
+      return;
+    }
+    // 純粹是瀏覽器擋掉自動播放，就把按鈕露出來讓她自己點
+    musicBtn.classList.add("show", "off");
+  });
+}
+musicBtn.addEventListener("click", () => {
+  if (audio.paused){ audio.play().catch(()=>{}); musicBtn.classList.remove("off"); }
+  else { audio.pause(); musicBtn.classList.add("off"); }
+});
+
+/* ---------- 0. 解鎖 ---------- */
+const boxes = $$("#code input");
+$("#hint").textContent = CONFIG.hint;
+// 照片解不開有兩種完全不同的原因，要分開講 —— 講錯會害人往錯的方向查。
+// 一種是網址不是 HTTPS（瀏覽器在非安全環境下根本不提供解密功能，
+// 跟有沒有鑰匙無關），一種是真的沒帶到卡片裡的鑰匙。
+READY.then(() => {
+  if (hasKey) return;
+  const n = document.createElement("div");
+  n.className = "hint";
+  n.style.marginTop = "12px";
+  n.style.opacity = ".65";
+  n.textContent = (window.crypto && window.crypto.subtle)
+    ? "（沒有讀到卡片的鑰匙，照片會是空白的）"
+    : "（這個網址不是 HTTPS，瀏覽器不提供解密功能，照片會是空白的）";
+  $("#hint").insertAdjacentElement("afterend", n);
+});
+boxes.forEach((b, i) => {
+  b.addEventListener("input", () => {
+    // 貼上或一次打進好幾碼時，自動往後面幾格分配，不要吃掉多的數字
+    const digits = b.value.replace(/\D/g, "");
+    let last = i;
+    for (let k = 0; k < digits.length && i + k < boxes.length; k++){
+      boxes[i+k].value = digits[k];
+      last = i + k;
+    }
+    if (!digits.length) b.value = "";
+    if (digits.length && last < boxes.length - 1) boxes[last+1].focus();
+    check();
+  });
+  b.addEventListener("keydown", e => {
+    if (e.key === "Backspace" && !b.value && i > 0) boxes[i-1].focus();
+  });
+});
+async function check(){
+  const v = boxes.map(b => b.value).join("");
+  if (v.length < 4) return;
+  if (v === CONFIG.password){
+    startMusic();
+    // 牌要先建好再切場景，同時留一點停頓，不要輸入完就瞬間跳掉
+    await Promise.all([buildStage1(), new Promise(r => setTimeout(r, 420))]);
+    show("stage1");
+  } else {
+    $("#code").classList.add("bad");
+    setTimeout(() => {
+      $("#code").classList.remove("bad");
+      boxes.forEach(b => b.value = "");
+      boxes[0].focus();
+    }, 430);
+  }
+}
+
+/* ---------- 1. 翻牌配對 ---------- */
+function shuffle(a){
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+let s1Built = false;
+async function buildStage1(){
+  if (s1Built) return;
+  s1Built = true;
+  await READY;
+  const pairs = Math.max(1, MANIFEST.match || CONFIG.matchLines.length);
+  const wrap = $("#cards");
+  const deck = shuffle(Array.from({ length: pairs }, (_, i) => i).flatMap(i => [i, i]));
+  let open = [], lock = false, matched = 0;
+
+  deck.forEach(i => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.i = i;
+    const inner = document.createElement("div");
+    inner.className = "in";
+    const back = document.createElement("div");
+    back.className = "face back";
+    const front = document.createElement("div");
+    front.className = "face front";
+    front.appendChild(photoImg("m" + String(i+1).padStart(2,"0"), ""));
+    inner.append(back, front);
+    card.appendChild(inner);
+
+    card.addEventListener("click", () => {
+      if (lock || card.classList.contains("flip") || card.classList.contains("done")) return;
+      card.classList.add("flip");
+      open.push(card);
+      if (open.length < 2) return;
+      lock = true;
+      const [a, b] = open;
+      if (a.dataset.i === b.dataset.i){
+        setTimeout(() => {
+          a.classList.add("done"); b.classList.add("done");
+          a.classList.remove("flip"); b.classList.remove("flip");
+          $("#said").textContent = CONFIG.matchLines[+a.dataset.i] || "";
+          open = []; lock = false;
+          if (++matched === pairs){
+            setTimeout(() => { $("#go2").style.display = "inline-block"; }, 500);
+          }
+        }, 480);
+      } else {
+        setTimeout(() => {
+          a.classList.remove("flip"); b.classList.remove("flip");
+          open = []; lock = false;
+        }, 850);
+      }
+    });
+    wrap.appendChild(card);
+  });
+}
+$("#go2").addEventListener("click", () => { buildStage2(); show("stage2"); });
+
+/* ---------- 2. 拼圖 ---------- */
+let s2Built = false;
+async function buildStage2(){
+  if (s2Built) return;
+  s2Built = true;
+  try {
+    await buildPuzzle();
+  } catch(e){
+    // 沒建成功就把旗標放回去，不然這一關會永遠是空的、連重試的機會都沒有
+    s2Built = false;
+    throw e;
+  }
+}
+async function buildPuzzle(){
+  await READY;
+  const url = await photoSrc("p01");
+  const grid = $("#puz");
+
+  // 網格跟著照片的形狀走。網格寫死正方形的話，非正方形的照片會被硬拉，
+  // 人和字都會變形 —— 橫的被拉高、直的被拉寬。
+  //
+  // 這裡不能用 img.decode()：頁面不可見時（她切去看訊息、鎖螢幕）它會一直
+  // 掛著不回來，整個第二關就停在這裡建不完。onload 在背景分頁照常觸發，
+  // 而且那時候就讀得到 naturalWidth 了。再加一道逾時當保險。
+  const probe = new Image();
+  probe.src = url;
+  await new Promise(done => {
+    probe.onload = done;
+    probe.onerror = done;
+    setTimeout(done, 3000);
+  });
+  if (probe.naturalWidth && probe.naturalHeight){
+    grid.style.aspectRatio = probe.naturalWidth + " / " + probe.naturalHeight;
+  }
+  // tiles[位置] = 這個位置目前放著哪一塊（0..8 是正確編號）
+  let tiles = shuffle([0,1,2,3,4,5,6,7,8]);
+  if (tiles.every((t, i) => t === i)) tiles = shuffle(tiles); // 避免一開始就是完成的
+  let sel = null, solved = false;
+
+  const cells = [];
+  for (let i = 0; i < 9; i++){
+    const c = document.createElement("div");
+    c.className = "pc";
+    c.style.backgroundImage = "url('" + url + "')";
+    c.addEventListener("click", () => {
+      if (solved) return;
+      if (sel === null){ sel = i; cells[i].classList.add("sel"); return; }
+      if (sel === i){ cells[i].classList.remove("sel"); sel = null; return; }
+      cells[sel].classList.remove("sel");
+      [tiles[sel], tiles[i]] = [tiles[i], tiles[sel]];
+      sel = null;
+      paint();
+      if (tiles.every((t, k) => t === k)){
+        solved = true;
+        grid.classList.add("solved");
+        $("#puzSaid").textContent = CONFIG.puzzleLine;
+        setTimeout(() => { $("#go3").style.display = "inline-block"; }, 600);
+      }
+    });
+    cells.push(c);
+    grid.appendChild(c);
+  }
+  function paint(){
+    cells.forEach((c, pos) => {
+      const t = tiles[pos];
+      c.style.backgroundPosition = ((t % 3) * 50) + "% " + (Math.floor(t / 3) * 50) + "%";
+    });
+  }
+  paint();
+
+  // 長按偷看原圖
+  const peek = $("#peek");
+  const showReal = () => cells.forEach((c, pos) => {
+    c.style.backgroundPosition = ((pos % 3) * 50) + "% " + (Math.floor(pos / 3) * 50) + "%";
+  });
+  const hideReal = () => { if (!solved) paint(); };
+  ["mousedown","touchstart"].forEach(e => peek.addEventListener(e, ev => { ev.preventDefault(); showReal(); }));
+  ["mouseup","mouseleave","touchend","touchcancel"].forEach(e => peek.addEventListener(e, hideReal));
+}
+$("#go3").addEventListener("click", () => { buildStage3(); show("stage3"); });
+
+/* ---------- 3. 回憶捲軸 ---------- */
+let s3Built = false;
+async function buildStage3(){
+  if (s3Built) return;
+  s3Built = true;
+  await READY;
+  $("#rollTitle").textContent = CONFIG.rollTitle;
+  const roll = $("#roll");
+  const n = Math.max(0, MANIFEST.roll || CONFIG.rollCaptions.length);
+
+  // 捲軸照片多，捲到附近才解密，不要一開機就抓十幾張下來
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add("in");
+      const img = e.target.querySelector("img");
+      if (img && img.dataset.name && !img.dataset.loaded){
+        img.dataset.loaded = "1";
+        photoSrc(img.dataset.name).then(u => { img.src = u; });
+      }
+      io.unobserve(e.target);
+    });
+  }, { threshold: .1, rootMargin: "300px 0px" });
+
+  for (let i = 0; i < n; i++){
+    const name = "r" + String(i+1).padStart(2, "0");
+    const capText = CONFIG.rollCaptions[i] || "";
+    const fig = document.createElement("div");
+    fig.className = "shot";
+    const img = document.createElement("img");
+    img.decoding = "async";
+    img.alt = capText;
+    img.dataset.name = name;
+    img.src = placeholder(labelOf(name));
+    fig.appendChild(img);
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.textContent = capText;
+    fig.appendChild(cap);
+    roll.appendChild(fig);
+    io.observe(fig);
+  }
+}
+function paintEnding(){
+  $("#letter").textContent = CONFIG.letter;
+  const g = $("#gift");
+  // 沒寫禮物提示就整個框拿掉，不要留一個空框在信的下面
+  if (CONFIG.gift){ g.innerHTML = "<b>" + CONFIG.gift + "</b>"; g.style.display = ""; }
+  else { g.style.display = "none"; }
+}
+$("#go4").addEventListener("click", () => {
+  paintEnding();
+  show("stage4");
+});
+
+/* ---------- 重看 ---------- */
+$("#again").addEventListener("click", () => {
+  try { localStorage.removeItem("anniv_at"); } catch(e){}
+  location.reload();
+});
+
+/* ---------- 中途離開再回來，回到原本的關卡 ---------- */
+(function resume(){
+  let at = null;
+  try { at = localStorage.getItem("anniv_at"); } catch(e){}
+  if (!at || at === "lock" || ORDER.indexOf(at) < 0) return;
+  if (ORDER.indexOf(at) >= 1) buildStage1();
+  if (ORDER.indexOf(at) >= 2) buildStage2();
+  if (ORDER.indexOf(at) >= 3) buildStage3();
+  if (at === "stage4") paintEnding();
+  show(at);
+  if (CONFIG.bgm) musicBtn.classList.add("show", "off");
+})();
+</script>
+</body>
+</html>
